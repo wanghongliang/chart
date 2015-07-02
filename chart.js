@@ -11,17 +11,16 @@
 
 (function(){
 
-	"use strict";
+	"use strict"; //强制执行JS新开发标准， 运行更快
 
 	//Declare root variable - window in the browser, global on the server
 	var root = this,
 		previous = root.Chart;
 
-	//Occupy the global variable of Chart, and create a simple base class
+	//声明图表全局类, 新建一个基类
 	var Chart = function(context){
 		var chart = this;
-		this.canvas = context.canvas;
-
+		this.canvas = context.canvas; 
 		this.ctx = context;
 
 		//Variables global to the chart
@@ -52,6 +51,9 @@
 
 		return this;
 	};
+
+
+	//默认配置文件
 	//Globally expose the defaults to allow for user updating/changing
 	Chart.defaults = {
 		global: {
@@ -215,8 +217,10 @@
 			return objClone;
 		},
 		extend = helpers.extend = function(base){
-			each(Array.prototype.slice.call(arguments,1), function(extensionObject) {
-				each(extensionObject,function(value,key){
+
+			//把参数转成一个数组
+			each( Array.prototype.slice.call(arguments,1), function(extensionObject) {
+				each( extensionObject, function(value,key){
 					if (extensionObject.hasOwnProperty(key)) base[key] = value;
 				});
 			});
