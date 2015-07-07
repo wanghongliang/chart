@@ -23,7 +23,8 @@
 		this.canvas = context.canvas; 
 		this.ctx = context;
 
-		//Variables global to the chart
+		//Variables global to the chart dimension尺寸
+		//计算元素尺寸
 		var computeDimension = function(element,dimension)
 		{
 			if (element['offset'+dimension])
@@ -36,17 +37,25 @@
 			}
 		}
 
+		
+		//获取画布的宽高
 		var width = this.width = computeDimension(context.canvas,'Width');
 		var height = this.height = computeDimension(context.canvas,'Height');
 
 		// Firefox requires this to work correctly
+		//火狐下面需要重新设置属性
 		context.canvas.width  = width;
 		context.canvas.height = height;
 
-		var width = this.width = context.canvas.width;
-		var height = this.height = context.canvas.height;
+		
+		var width 	= this.width 	= context.canvas.width;
+		var height 	= this.height 	= context.canvas.height;
+		
+		//宽高比
 		this.aspectRatio = this.width / this.height;
 		//High pixel density displays - multiply the size of the canvas height/width by the device pixel ratio, then scale.
+		
+		//计算视网膜屏的尺寸
 		helpers.retinaScale(this);
 
 		return this;
@@ -58,15 +67,19 @@
 	Chart.defaults = {
 		global: {
 			// Boolean - Whether to animate the chart
+			//是否开启图表动画
 			animation: true,
 
 			// Number - Number of animation steps
+			//动画的步骤
 			animationSteps: 60,
 
 			// String - Animation easing effect
+			//动画的效果
 			animationEasing: "easeOutQuart",
 
 			// Boolean - If we should show the scale at all
+			//是否显示比例
 			showScale: true,
 
 			// Boolean - If we want to override with a hard coded scale
@@ -87,12 +100,14 @@
 			scaleLineWidth: 1,
 
 			// Boolean - Whether to show labels on the scale
+			//显示比例上显示比例
 			scaleShowLabels: true,
 
 			// Interpolated JS string - can access value
 			scaleLabel: "<%=value%>",
 
 			// Boolean - Whether the scale should stick to integers, and not show any floats even if drawing space is there
+			//是否取整
 			scaleIntegersOnly: true,
 
 			// Boolean - Whether the scale should start at zero, or an order of magnitude down from the lowest value
@@ -111,15 +126,19 @@
 			scaleFontColor: "#666",
 
 			// Boolean - whether or not the chart should be responsive and resize when the browser does.
+			//浏览器调整时， 是不是跟随调整
 			responsive: false,
 
 			// Boolean - whether to maintain the starting aspect ratio or not when responsive, if set to false, will take up entire container
+			//是否保持启动长宽比，如果设置为false，会占用整个容器
 			maintainAspectRatio: true,
 
 			// Boolean - Determines whether to draw tooltips on the canvas or not - attaches events to touchmove & mousemove
+			//是否显示提示信息
 			showTooltips: true,
 
 			// Boolean - Determines whether to draw built-in tooltip or call custom tooltip function
+			//是否启动自定义提示框
 			customTooltips: false,
 
 			// Array - Array of string names to attach tooltip events
@@ -193,9 +212,13 @@
 
 		//-- Basic js utility methods
 	var each = helpers.each = function(loopable,callback,self){
+		
+			//把参数对象截取，并转成数组
 			var additionalArgs = Array.prototype.slice.call(arguments, 3);
 			// Check to see if null or undefined firstly.
 			if (loopable){
+				
+				//
 				if (loopable.length === +loopable.length){
 					var i;
 					for (i=0; i<loopable.length; i++){
@@ -317,6 +340,9 @@
 		min = helpers.min = function(array){
 			return Math.min.apply( Math, array );
 		},
+		
+		
+		//把数字限止在某一范围内
 		cap = helpers.cap = function(valueToCap,maxValue,minValue){
 			if(isNumber(maxValue)) {
 				if( valueToCap > maxValue ) {
@@ -330,26 +356,37 @@
 			}
 			return valueToCap;
 		},
+		
+		//获取小数点位数
 		getDecimalPlaces = helpers.getDecimalPlaces = function(num){
-			if (num%1!==0 && isNumber(num)){
+			if ( num%1!==0 && isNumber(num) ){
 				return num.toString().split(".")[1].length;
 			}
 			else {
 				return 0;
 			}
 		},
+		
+		//弧度
 		toRadians = helpers.radians = function(degrees){
 			return degrees * (Math.PI/180);
 		},
+		
+		
 		// Gets the angle from vertical upright to the point about a centre.
+		
+		//获取角度
 		getAngleFromPoint = helpers.getAngleFromPoint = function(centrePoint, anglePoint){
+			
+			// distance 距离
 			var distanceFromXCenter = anglePoint.x - centrePoint.x,
 				distanceFromYCenter = anglePoint.y - centrePoint.y,
+				//Math.sqrt 开方
 				radialDistanceFromCenter = Math.sqrt( distanceFromXCenter * distanceFromXCenter + distanceFromYCenter * distanceFromYCenter);
 
-
+			//Math.atan2函数用于返回从x轴到指定坐标点(x, y)的角度(以弧度为单位)
 			var angle = Math.PI * 2 + Math.atan2(distanceFromYCenter, distanceFromXCenter);
-
+			
 			//If the segment is in the top left quadrant, we need to add another rotation to the angle
 			if (distanceFromXCenter < 0 && distanceFromYCenter < 0){
 				angle += Math.PI*2;
@@ -786,6 +823,8 @@
 				ctx.canvas.style.height = height + "px";
 				ctx.canvas.height = height * window.devicePixelRatio;
 				ctx.canvas.width = width * window.devicePixelRatio;
+				
+				//缩放画布大小
 				ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
 			}
 		},
@@ -3479,3 +3518,6 @@
 
 
 }).call(this);
+
+
+alert( "ok" );
