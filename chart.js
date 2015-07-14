@@ -11,20 +11,20 @@
 
 (function(){
 
-	"use strict"; //ǿ��ִ��JS�¿�����׼�� ���и���
+	"use strict"; //强制执行JS新开发标准， 运行更快
 
 	//Declare root variable - window in the browser, global on the server
 	var root = this,
 		previous = root.Chart;
 
-	//����ͼ��ȫ����, �½�һ������
+	//声明图表全局类, 新建一个基类
 	var Chart = function(context){
 		var chart = this;
 		this.canvas = context.canvas; 
 		this.ctx = context;
 
-		//Variables global to the chart dimension�ߴ�
-		//����Ԫ�سߴ�
+		//Variables global to the chart dimension尺寸
+		//计算元素尺寸
 		var computeDimension = function(element,dimension)
 		{
 			if (element['offset'+dimension])
@@ -38,12 +38,12 @@
 		}
 
 		
-		//��ȡ�����Ŀ���
+		//获取画布的宽高
 		var width = this.width = computeDimension(context.canvas,'Width');
 		var height = this.height = computeDimension(context.canvas,'Height');
 
 		// Firefox requires this to work correctly
-		//���������Ҫ������������
+		//火狐下面需要重新设置属性
 		context.canvas.width  = width;
 		context.canvas.height = height;
 
@@ -51,35 +51,35 @@
 		var width 	= this.width 	= context.canvas.width;
 		var height 	= this.height 	= context.canvas.height;
 		
-		//���߱�
+		//宽高比
 		this.aspectRatio = this.width / this.height;
 		//High pixel density displays - multiply the size of the canvas height/width by the device pixel ratio, then scale.
 		
-		//��������Ĥ���ĳߴ�
+		//计算视网膜屏的尺寸
 		helpers.retinaScale(this);
 
 		return this;
 	};
 
 
-	//Ĭ�������ļ�
+	//默认配置文件
 	//Globally expose the defaults to allow for user updating/changing
 	Chart.defaults = {
 		global: {
 			// Boolean - Whether to animate the chart
-			//�Ƿ���ͼ������
+			//是否开启图表动画
 			animation: true,
 
 			// Number - Number of animation steps
-			//�����Ĳ���
+			//动画的步骤
 			animationSteps: 60,
 
 			// String - Animation easing effect
-			//������Ч��
+			//动画的效果
 			animationEasing: "easeOutQuart",
 
 			// Boolean - If we should show the scale at all
-			//�Ƿ���ʾ����
+			//是否显示比例
 			showScale: true,
 
 			// Boolean - If we want to override with a hard coded scale
@@ -100,14 +100,14 @@
 			scaleLineWidth: 1,
 
 			// Boolean - Whether to show labels on the scale
-			//��ʾ��������ʾ����
+			//显示比例上显示比例
 			scaleShowLabels: true,
 
 			// Interpolated JS string - can access value
 			scaleLabel: "<%=value%>",
 
 			// Boolean - Whether the scale should stick to integers, and not show any floats even if drawing space is there
-			//�Ƿ�ȡ��
+			//是否取整
 			scaleIntegersOnly: true,
 
 			// Boolean - Whether the scale should start at zero, or an order of magnitude down from the lowest value
@@ -126,19 +126,19 @@
 			scaleFontColor: "#666",
 
 			// Boolean - whether or not the chart should be responsive and resize when the browser does.
-			//���������ʱ�� �ǲ��Ǹ������
+			//浏览器调整时， 是不是跟随调整
 			responsive: false,
 
 			// Boolean - whether to maintain the starting aspect ratio or not when responsive, if set to false, will take up entire container
-			//�Ƿ񱣳����������ȣ��������Ϊfalse����ռ����������
+			//是否保持启动长宽比，如果设置为false，会占用整个容器
 			maintainAspectRatio: true,
 
 			// Boolean - Determines whether to draw tooltips on the canvas or not - attaches events to touchmove & mousemove
-			//�Ƿ���ʾ��ʾ��Ϣ
+			//是否显示提示信息
 			showTooltips: true,
 
 			// Boolean - Determines whether to draw built-in tooltip or call custom tooltip function
-			//�Ƿ������Զ�����ʾ��
+			//是否启动自定义提示框
 			customTooltips: false,
 
 			// Array - Array of string names to attach tooltip events
@@ -213,7 +213,7 @@
 		//-- Basic js utility methods
 	var each = helpers.each = function(loopable,callback,self){
 		
-			//�Ѳ��������ȡ����ת������
+			//把参数对象截取，并转成数组
 			var additionalArgs = Array.prototype.slice.call(arguments, 3);
 			// Check to see if null or undefined firstly.
 			if (loopable){
@@ -224,8 +224,8 @@
 					for (i=0; i<loopable.length; i++){
 						callback.apply(self,[loopable[i], i].concat(additionalArgs));
 					}
-				}
-				else{
+				}else{
+					
 					for (var item in loopable){
 						callback.apply(self,[loopable[item],item].concat(additionalArgs));
 					}
@@ -241,7 +241,7 @@
 		},
 		extend = helpers.extend = function(base){
 
-			//�Ѳ���ת��һ������
+			//把参数转成一个数组
 			each( Array.prototype.slice.call(arguments,1), function(extensionObject) {
 				each( extensionObject, function(value,key){
 					if (extensionObject.hasOwnProperty(key)) base[key] = value;
@@ -304,15 +304,23 @@
 		inherits = helpers.inherits = function(extensions){
 			//Basic javascript inheritance based on the model created in Backbone.js
 			var parent = this;
-			var ChartElement = (extensions && extensions.hasOwnProperty("constructor")) ? extensions.constructor : function(){ return parent.apply(this, arguments); };
 
+			 
+			//判断扩展参数是否有构造方法
+			var ChartElement = (extensions && extensions.hasOwnProperty("constructor")) ? extensions.constructor : function(){ return parent.apply(this, arguments); };
+				
+			//alert( ChartElement );
+			 
 			var Surrogate = function(){ this.constructor = ChartElement;};
 			Surrogate.prototype = parent.prototype;
-			ChartElement.prototype = new Surrogate();
+
+			// 重写Class构造函数的prototype，使其不再指向了Class原生的原型对象，而是指向了proto，即当前对象（类）的一个实例
+            // 本质：一个类的原型是另一个类的实例（继承）
+			ChartElement.prototype = new Surrogate(); //继承 Surrogate 
 
 			ChartElement.extend = inherits;
 
-			if (extensions) extend(ChartElement.prototype, extensions);
+			if (extensions) extend( ChartElement.prototype, extensions);
 
 			ChartElement.__super__ = parent.prototype;
 
@@ -342,7 +350,7 @@
 		},
 		
 		
-		//��������ֹ��ĳһ��Χ��
+		//把数字限止在某一范围内
 		cap = helpers.cap = function(valueToCap,maxValue,minValue){
 			if(isNumber(maxValue)) {
 				if( valueToCap > maxValue ) {
@@ -357,7 +365,7 @@
 			return valueToCap;
 		},
 		
-		//��ȡС����λ��
+		//获取小数点位数
 		getDecimalPlaces = helpers.getDecimalPlaces = function(num){
 			if ( num%1!==0 && isNumber(num) ){
 				return num.toString().split(".")[1].length;
@@ -367,7 +375,7 @@
 			}
 		},
 		
-		//����
+		//弧度
 		toRadians = helpers.radians = function(degrees){
 			return degrees * (Math.PI/180);
 		},
@@ -375,16 +383,16 @@
 		
 		// Gets the angle from vertical upright to the point about a centre.
 		
-		//��ȡ�Ƕ�
+		//获取角度
 		getAngleFromPoint = helpers.getAngleFromPoint = function(centrePoint, anglePoint){
 			
-			// distance ����
+			// distance 距离
 			var distanceFromXCenter = anglePoint.x - centrePoint.x,
 				distanceFromYCenter = anglePoint.y - centrePoint.y,
-				//Math.sqrt ����
+				//Math.sqrt 开方
 				radialDistanceFromCenter = Math.sqrt( distanceFromXCenter * distanceFromXCenter + distanceFromYCenter * distanceFromYCenter);
 
-			//Math.atan2�������ڷ��ش�x�ᵽָ�������(x, y)�ĽǶ�(�Ի���Ϊ��λ)
+			//Math.atan2函数用于返回从x轴到指定坐标点(x, y)的角度(以弧度为单位)
 			var angle = Math.PI * 2 + Math.atan2(distanceFromYCenter, distanceFromXCenter);
 			
 			//If the segment is in the top left quadrant, we need to add another rotation to the angle
@@ -400,13 +408,24 @@
 		aliasPixel = helpers.aliasPixel = function(pixelWidth){
 			return (pixelWidth % 2 === 0) ? 0 : 0.5;
 		},
+		
+		//样条曲线
 		splineCurve = helpers.splineCurve = function(FirstPoint,MiddlePoint,AfterPoint,t){
 			//Props to Rob Spencer at scaled innovation for his post on splining between points
 			//http://scaledinnovation.com/analytics/splines/aboutSplines.html
-			var d01=Math.sqrt(Math.pow(MiddlePoint.x-FirstPoint.x,2)+Math.pow(MiddlePoint.y-FirstPoint.y,2)),
-				d12=Math.sqrt(Math.pow(AfterPoint.x-MiddlePoint.x,2)+Math.pow(AfterPoint.y-MiddlePoint.y,2)),
-				fa=t*d01/(d01+d12),// scaling factor for triangle Ta
+			
+			// Math.pow 返回基数的次幂 这里是平方 
+			// Math.sqrt 开方
+
+			//计算炫长
+			var d01=Math.sqrt( Math.pow(MiddlePoint.x-FirstPoint.x,2) + Math.pow(MiddlePoint.y-FirstPoint.y,2)  ),
+				d12=Math.sqrt( Math.pow(AfterPoint.x-MiddlePoint.x,2) + Math.pow(AfterPoint.y-MiddlePoint.y,2)  ),
+
+
+				fa=t*d01/(d01+d12),// scaling factor for triangle Ta 计算例因子
 				fb=t*d12/(d01+d12);
+			
+			
 			return {
 				inner : {
 					x : MiddlePoint.x-fa*(AfterPoint.x-FirstPoint.x),
@@ -419,11 +438,15 @@
 			};
 		},
 		calculateOrderOfMagnitude = helpers.calculateOrderOfMagnitude = function(val){
-			return Math.floor(Math.log(val) / Math.LN10);
+			return Math.floor( Math.log(val) / Math.LN10);
 		},
+
+		//计算标度范围
 		calculateScaleRange = helpers.calculateScaleRange = function(valuesArray, drawingSize, textSize, startFromZero, integersOnly){
 
 			//Set a minimum step of two - a point at the top of the graph, and a point at the base
+
+			//Math.floor 取整
 			var minSteps = 2,
 				maxSteps = Math.floor(drawingSize/(textSize * 1.5)),
 				skipFitting = (minSteps >= maxSteps);
@@ -520,6 +543,7 @@
 
 				// Generate a reusable function that will serve as a template
 				// generator (and which will be cached).
+				//
 				new Function("obj",
 					"var p=[],print=function(){p.push.apply(p,arguments);};" +
 
@@ -541,6 +565,7 @@
 				// Provide some basic currying to the user
 				return data ? fn( data ) : fn;
 			}
+			
 			return tmpl(templateString,valuesObject);
 		},
 		/* jshint ignore:end */
@@ -705,6 +730,8 @@
 			}
 		},
 		//Request animation polyfill - http://www.paulirish.com/2011/requestanimationframe-for-smart-animating/
+
+		//开始执行动画函数
 		requestAnimFrame = helpers.requestAnimFrame = (function(){
 			return window.requestAnimationFrame ||
 				window.webkitRequestAnimationFrame ||
@@ -715,6 +742,8 @@
 					return window.setTimeout(callback, 1000 / 60);
 				};
 		})(),
+
+		//取消执行动画
 		cancelAnimFrame = helpers.cancelAnimFrame = (function(){
 			return window.cancelAnimationFrame ||
 				window.webkitCancelAnimationFrame ||
@@ -725,6 +754,8 @@
 					return window.clearTimeout(callback, 1000 / 60);
 				};
 		})(),
+
+		//循环执行动画
 		animationLoop = helpers.animationLoop = function(callback,totalSteps,easingString,onProgress,onComplete,chartInstance){
 
 			var currentStep = 0,
@@ -745,7 +776,11 @@
 			};
 			requestAnimFrame(animationFrame);
 		},
+
+
+		//-------------------------------DOM 操作方法 ----------------------------
 		//-- DOM methods
+		//获取事件在画布的坐标
 		getRelativePosition = helpers.getRelativePosition = function(evt){
 			var mouseX, mouseY;
 			var e = evt.originalEvent || evt,
@@ -802,6 +837,8 @@
 				removeEvent(chartInstance.chart.canvas, eventName, handler);
 			});
 		},
+
+		//获取元素最大可显示的宽度
 		getMaximumWidth = helpers.getMaximumWidth = function(domNode){
 			var container = domNode.parentNode;
 			// TODO = check cross browser stuff with this.
@@ -813,6 +850,9 @@
 			return container.clientHeight;
 		},
 		getMaximumSize = helpers.getMaximumSize = helpers.getMaximumWidth, // legacy support
+
+
+
 		retinaScale = helpers.retinaScale = function(chart){
 			var ctx = chart.ctx,
 				width = chart.canvas.width,
@@ -824,10 +864,13 @@
 				ctx.canvas.height = height * window.devicePixelRatio;
 				ctx.canvas.width = width * window.devicePixelRatio;
 				
-				//���Ż�����С
+				//缩放画布大小
 				ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
 			}
 		},
+
+
+		//--------------------------------- Canvas 操作方法 -----------------------------------------
 		//-- Canvas methods
 		clear = helpers.clear = function(chart){
 			chart.ctx.clearRect(0,0,chart.width,chart.height);
@@ -844,6 +887,8 @@
 			});
 			return longest;
 		},
+
+		//画矩形,可设置圆角
 		drawRoundedRectangle = helpers.drawRoundedRectangle = function(ctx,x,y,width,height,radius){
 			ctx.beginPath();
 			ctx.moveTo(x + radius, y);
@@ -861,6 +906,8 @@
 
 	//Store a reference to each instance - allowing us to globally resize chart instances on window resize.
 	//Destroy method on the chart will remove the instance of the chart from this reference.
+
+	//储存引用的每一个实例
 	Chart.instances = {};
 
 	Chart.Type = function(data,options,chart){
@@ -880,16 +927,25 @@
 
 	//Core methods that'll be a part of every chart type
 	extend(Chart.Type.prototype,{
+
+		//初始化数据类型
 		initialize : function(){return this;},
+
+
+		//清除convas
 		clear : function(){
 			clear(this.chart);
 			return this;
 		},
+
+		//停止动画处理
 		stop : function(){
 			// Stops any current animation loop occuring
 			cancelAnimFrame(this.animationFrame);
 			return this;
 		},
+
+		//缩放处理
 		resize : function(callback){
 			this.stop();
 			var canvas = this.chart.canvas,
@@ -907,6 +963,8 @@
 			return this;
 		},
 		reflow : noop,
+
+		//执行画图处理
 		render : function(reflow){
 			if (reflow){
 				this.reflow();
@@ -927,9 +985,15 @@
 			}
 			return this;
 		},
+
+
+		//生成图表的标题
 		generateLegend : function(){
 			return template(this.options.legendTemplate,this);
 		},
+
+
+		//清除图表信息
 		destroy : function(){
 			this.clear();
 			unbindEvents(this, this.events);
@@ -950,18 +1014,29 @@
 
 			delete Chart.instances[this.id];
 		},
+
+
+
+		/***
+		 * 显示提示框方法
+		 * 1. 先判断焦点上的元素是否发生变化
+		 * 2. 判断是否有多种图形数据需要显示
+		 */
 		showTooltip : function(ChartElements, forceRedraw){
 			// Only redraw the chart if we've actually changed what we're hovering on.
 			if (typeof this.activeElements === 'undefined') this.activeElements = [];
 
+
+			//判断元素是否变了
 			var isChanged = (function(Elements){
 				var changed = false;
-
+				
+				//元素的长度不同
 				if (Elements.length !== this.activeElements.length){
 					changed = true;
 					return changed;
 				}
-
+				//循环判断元素子元素
 				each(Elements, function(element, index){
 					if (element !== this.activeElements[index]){
 						changed = true;
@@ -970,29 +1045,51 @@
 				return changed;
 			}).call(this, ChartElements);
 
+			//判断是否需要重新画
 			if (!isChanged && !forceRedraw){
 				return;
 			}
 			else{
 				this.activeElements = ChartElements;
 			}
+
+
+			//开始处理图象重画工作
 			this.draw();
 			if(this.options.customTooltips){
 				this.options.customTooltips(false);
 			}
+
+
+			//如果有需要提示的元素, 则进行画提示框
 			if (ChartElements.length > 0){
 				// If we have multiple datasets, show a MultiTooltip for all of the data points at that index
+
+				//数据节点是否大于0， 即有多个数据节点
 				if (this.datasets && this.datasets.length > 1) {
+
+					//数据
 					var dataArray,
 						dataIndex;
 
+					
+					 
+					//循环数据 查找到元素在子元素节点的位置
 					for (var i = this.datasets.length - 1; i >= 0; i--) {
+
+						//根据顺序判断数据类型
 						dataArray = this.datasets[i].points || this.datasets[i].bars || this.datasets[i].segments;
+
+						//判断是否在数姐
 						dataIndex = indexOf(dataArray, ChartElements[0]);
+
+						//如果[存在]则不查找了
 						if (dataIndex !== -1){
 							break;
 						}
 					}
+
+					//提示标签，颜色
 					var tooltipLabels = [],
 						tooltipColors = [],
 						medianPosition = (function(index) {
@@ -1006,6 +1103,8 @@
 								yMax,
 								xMin,
 								yMin;
+
+							//查找到元素
 							helpers.each(this.datasets, function(dataset){
 								dataCollection = dataset.points || dataset.bars || dataset.segments;
 								if (dataCollection[dataIndex] && dataCollection[dataIndex].hasValue()){
@@ -1093,11 +1192,15 @@
 		}
 	});
 
+
+
+	//图表类型扩展属性和方法
 	Chart.Type.extend = function(extensions){
 
-		var parent = this;
+		var parent = this; //这里this 指的是 Chart.Type 函数
 
 		var ChartType = function(){
+			//在this环境下调用parent方法
 			return parent.apply(this,arguments);
 		};
 
@@ -1121,6 +1224,8 @@
 
 			Chart.defaults[chartName] = extend(baseDefaults,extensions.defaults);
 
+
+			//为chart类型扩展
 			Chart.types[chartName] = ChartType;
 
 			//Register this new chart type in the Chart prototype
@@ -1134,13 +1239,24 @@
 		return parent;
 	};
 
+
+	//声明一个元素
 	Chart.Element = function(configuration){
+
+		//把参数的属性和方法扩展到元素对象上
 		extend(this,configuration);
+
+		//调用初始化方法
 		this.initialize.apply(this,arguments);
+
+		//调用保存方法
 		this.save();
 	};
 	extend(Chart.Element.prototype,{
 		initialize : function(){},
+
+
+		//恢复保存的信息
 		restore : function(props){
 			if (!props){
 				extend(this,this._saved);
@@ -2959,6 +3075,7 @@
 		segmentStrokeColor : "#fff",
 
 		//Number - The width of the stroke value in pixels
+		//笔画的宽度以象素为单位
 		segmentStrokeWidth : 2,
 
 		//Number - Amount of animation steps
@@ -3520,4 +3637,3 @@
 }).call(this);
 
 
-alert( "ok" );
