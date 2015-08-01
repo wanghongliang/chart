@@ -437,25 +437,49 @@
 				}
 			};
 		},
+
+
 		calculateOrderOfMagnitude = helpers.calculateOrderOfMagnitude = function(val){
 			return Math.floor( Math.log(val) / Math.LN10);
 		},
 
+
+
+		/***
+		 *	dataTotal(),	
+			currentHeight,
+			this.fontSize,
+			this.beginAtZero,
+			this.integersOnly
+		 *
+		 * 
+		 */
+
+		 /**
+		  * valuesArray 数姐
+		  * drawingSize 画布高度
+		  * textSize 文本大小
+		  * startFromZero 开始位置
+		  */
 		//计算标度范围
-		calculateScaleRange = helpers.calculateScaleRange = function(valuesArray, drawingSize, textSize, startFromZero, integersOnly){
+		calculateScaleRange = helpers.calculateScaleRange = function( valuesArray, drawingSize, textSize, startFromZero, integersOnly){
 
 			//Set a minimum step of two - a point at the top of the graph, and a point at the base
 
 			//Math.floor 取整
+			//minSteps 
 			var minSteps = 2,
-				maxSteps = Math.floor(drawingSize/(textSize * 1.5)),
-				skipFitting = (minSteps >= maxSteps);
+				maxSteps = Math.floor( drawingSize/(textSize * 1.5) ),
+				skipFitting = ( minSteps >= maxSteps );
 
 			var maxValue = max(valuesArray),
 				minValue = min(valuesArray);
 
 			// We need some degree of seperation here to calculate the scales if all the values are the same
 			// Adding/minusing 0.5 will give us a range of 1.
+
+
+			//
 			if (maxValue === minValue){
 				maxValue += 0.5;
 				// So we don't end up with a graph with a negative start value if we've said always start from zero
@@ -468,19 +492,37 @@
 				}
 			}
 
+
+			//最大值和最小值的差
 			var	valueRange = Math.abs(maxValue - minValue),
-				rangeOrderOfMagnitude = calculateOrderOfMagnitude(valueRange),
-				graphMax = Math.ceil(maxValue / (1 * Math.pow(10, rangeOrderOfMagnitude))) * Math.pow(10, rangeOrderOfMagnitude),
+				rangeOrderOfMagnitude = calculateOrderOfMagnitude(valueRange),	// calculateOrderOfMagnitude( 101 or 100 ) = 2  取以10为底的对数取整
+				graphMax = Math.ceil( maxValue / (1 * Math.pow(10, rangeOrderOfMagnitude))) * Math.pow(10, rangeOrderOfMagnitude),
 				graphMin = (startFromZero) ? 0 : Math.floor(minValue / (1 * Math.pow(10, rangeOrderOfMagnitude))) * Math.pow(10, rangeOrderOfMagnitude),
 				graphRange = graphMax - graphMin,
 				stepValue = Math.pow(10, rangeOrderOfMagnitude),
+
+				
 				numberOfSteps = Math.round(graphRange / stepValue);
+				//alert(  "maxValue" + maxValue + " rangeOrderOfMagnitude" + rangeOrderOfMagnitude +  " graphMax" + graphMax + " graphMin" + graphMin + " graphRange" + graphRange + " stepValue" + stepValue);
+				
+
+				alert( "numberOfSteps" + numberOfSteps);
+
 
 			//If we have more space on the graph we'll use it to give more definition to the data
-			while((numberOfSteps > maxSteps || (numberOfSteps * 2) < maxSteps) && !skipFitting) {
-				if(numberOfSteps > maxSteps){
+
+
+			//网格的数量*2 > 最大的数量 不用处理
+			while( ( numberOfSteps > maxSteps || ( numberOfSteps * 2 ) < maxSteps ) && !skipFitting) {
+
+
+				//如果当前 网格数量 大于 最大网格数量
+				if( numberOfSteps > maxSteps ){
+
 					stepValue *=2;
+
 					numberOfSteps = Math.round(graphRange/stepValue);
+
 					// Don't ever deal with a decimal number of steps - cancel fitting and just use the minimum number of steps.
 					if (numberOfSteps % 1 !== 0){
 						skipFitting = true;
@@ -488,9 +530,14 @@
 				}
 				//We can fit in double the amount of scale points on the scale
 				else{
+
+
+					//如果必需是整数的话
 					//If user has declared ints only, and the step value isn't a decimal
 					if (integersOnly && rangeOrderOfMagnitude >= 0){
 						//If the user has said integers only, we need to check that making the scale more granular wouldn't make it a float
+
+						//10 的次方
 						if(stepValue/2 % 1 === 0){
 							stepValue /=2;
 							numberOfSteps = Math.round(graphRange/stepValue);
@@ -515,10 +562,10 @@
 			}
 
 			return {
-				steps : numberOfSteps,
-				stepValue : stepValue,
-				min : graphMin,
-				max	: graphMin + (numberOfSteps * stepValue)
+				steps : numberOfSteps,		//网格的数量
+				stepValue : stepValue,		//网格的间距
+				min : graphMin,				//最小值
+				max	: graphMin + (numberOfSteps * stepValue) //最大值
 			};
 
 		},
@@ -1613,20 +1660,33 @@
 		}
 	});
 
+
+
+	//图表底面
 	Chart.Scale = Chart.Element.extend({
+
+
 		initialize : function(){
 			this.fit();
 		},
+
+		//处理Y轴上的文本
 		buildYLabels : function(){
+
+			//Y轴标签
 			this.yLabels = [];
-
-			var stepDecimalPlaces = getDecimalPlaces(this.stepValue);
-
+			
+			//小数的位数
+			var stepDecimalPlaces = getDecimalPlaces( this.stepValue ); 
 			for (var i=0; i<=this.steps; i++){
-				this.yLabels.push(template(this.templateString,{value:(this.min + (i * this.stepValue)).toFixed(stepDecimalPlaces)}));
+
+				//
+				this.yLabels.push(template(this.templateString,{value:(this.min + (i * this.stepValue)).toFixed( stepDecimalPlaces ) }));
 			}
 			this.yLabelWidth = (this.display && this.showLabels) ? longestText(this.ctx,this.font,this.yLabels) : 0;
 		},
+
+
 		addXLabel : function(label){
 			this.xLabels.push(label);
 			this.valuesCount++;
@@ -1637,17 +1697,25 @@
 			this.valuesCount--;
 			this.fit();
 		},
+
+
+
+		//
 		// Fitting loop to rotate x Labels and figure out what fits there, and also calculate how many Y steps to use
 		fit: function(){
 			// First we need the width of the yLabels, assuming the xLabels aren't rotated
+			
+
+			//startPoint = 画布相对左上角的象率
+			//endPoint  = 画布高度
 
 			// To do that we need the base line at the top and base of the chart, assuming there is no x label rotation
-			this.startPoint = (this.display) ? this.fontSize : 0;
-			this.endPoint = (this.display) ? this.height - (this.fontSize * 1.5) - 5 : this.height; // -5 to pad labels
-
+			this.startPoint		= (this.display) ? this.fontSize : 0;
+			this.endPoint		= (this.display) ? this.height - (this.fontSize * 1.5) - 5 : this.height; // -5 to pad labels
+			
 			// Apply padding settings to the start and end point.
-			this.startPoint += this.padding;
-			this.endPoint -= this.padding;
+			this.startPoint		+= this.padding;
+			this.endPoint		-= this.padding;
 
 			// Cache the starting height, so can determine if we need to recalculate the scale yAxis
 			var cachedHeight = this.endPoint - this.startPoint,
@@ -1671,7 +1739,7 @@
 
 			this.calculateXLabelRotation();
 
-			while((cachedHeight > this.endPoint - this.startPoint)){
+			while( (cachedHeight > this.endPoint - this.startPoint) ){
 				cachedHeight = this.endPoint - this.startPoint;
 				cachedYLabelWidth = this.yLabelWidth;
 
@@ -1697,10 +1765,12 @@
 				lastRotated;
 
 
-			this.xScalePaddingRight = lastWidth/2 + 3;
-			this.xScalePaddingLeft = (firstWidth/2 > this.yLabelWidth + 10) ? firstWidth/2 : this.yLabelWidth + 10;
+			this.xScalePaddingRight		= lastWidth/2 + 3;
+			this.xScalePaddingLeft		= (firstWidth/2 > this.yLabelWidth + 10) ? firstWidth/2 : this.yLabelWidth + 10;
 
 			this.xLabelRotation = 0;
+
+
 			if (this.display){
 				var originalLabelWidth = longestText(this.ctx,this.font,this.xLabels),
 					cosRotation,
@@ -1748,6 +1818,8 @@
 			var scalingFactor = this.drawingArea() / (this.min - this.max);
 			return this.endPoint - (scalingFactor * (value - this.min));
 		},
+
+
 		calculateX : function(index){
 			var isRotated = (this.xLabelRotation > 0),
 				// innerWidth = (this.offsetGridLines) ? this.width - offsetLeft - this.padding : this.width - (offsetLeft + halfLabelWidth * 2) - this.padding,
@@ -1765,22 +1837,36 @@
 			helpers.extend(this, newProps);
 			this.fit();
 		},
+
+
+		//画面板
 		draw : function(){
 			var ctx = this.ctx,
-				yLabelGap = (this.endPoint - this.startPoint) / this.steps,
+				yLabelGap = (this.endPoint - this.startPoint) / this.steps,		//Y轴标签的数量
 				xStart = Math.round(this.xScalePaddingLeft);
+
+
 			if (this.display){
 				ctx.fillStyle = this.textColor;
 				ctx.font = this.font;
+
+				//画Y轴信息
 				each(this.yLabels,function(labelString,index){
+
+
+					//Y轴 画标签的位置
 					var yLabelCenter = this.endPoint - (yLabelGap * index),
+
+						//
 						linePositionY = Math.round(yLabelCenter),
 						drawHorizontalLine = this.showHorizontalLines;
 
-					ctx.textAlign = "right";
-					ctx.textBaseline = "middle";
+					ctx.textAlign		= "right";
+					ctx.textBaseline	= "middle";
+					
+					//画Y轴上的文字
 					if (this.showLabels){
-						ctx.fillText(labelString,xStart - 10,yLabelCenter);
+						ctx.fillText( labelString, xStart - 10, yLabelCenter);
 					}
 
 					// This is X axis, so draw it
@@ -1802,26 +1888,33 @@
 						ctx.strokeStyle = this.lineColor;
 					}
 
-					linePositionY += helpers.aliasPixel(ctx.lineWidth);
+					linePositionY += helpers.aliasPixel( ctx.lineWidth );
 
-					if(drawHorizontalLine){
-						ctx.moveTo(xStart, linePositionY);
+					//画水平线
+					if(drawHorizontalLine){ 
+						ctx.moveTo( xStart, linePositionY );
 						ctx.lineTo(this.width, linePositionY);
 						ctx.stroke();
 						ctx.closePath();
 					}
+					
+					ctx.lineWidth		= this.lineWidth;
+					ctx.strokeStyle		= this.lineColor;
 
-					ctx.lineWidth = this.lineWidth;
-					ctx.strokeStyle = this.lineColor;
 					ctx.beginPath();
-					ctx.moveTo(xStart - 5, linePositionY);
-					ctx.lineTo(xStart, linePositionY);
+					ctx.moveTo(		xStart - 5,		linePositionY	);
+					ctx.lineTo(		xStart,			linePositionY	);
+
 					ctx.stroke();
 					ctx.closePath();
 
 				},this);
 
+
+				//画X轴
 				each(this.xLabels,function(label,index){
+
+
 					var xPos = this.calculateX(index) + aliasPixel(this.lineWidth),
 						// Check to see if line/bar here and decide where to place the line
 						linePos = this.calculateX(index - (this.offsetGridLines ? 0.5 : 0)) + aliasPixel(this.lineWidth),
@@ -1857,7 +1950,9 @@
 
 					ctx.lineWidth = this.lineWidth;
 					ctx.strokeStyle = this.lineColor;
+					
 
+					//alert( "linePos:"+linePos + "endPoint:" + ( this.endPoint +5  ) );
 
 					// Small lines at the bottom of the base grid line
 					ctx.beginPath();
@@ -1867,8 +1962,15 @@
 					ctx.closePath();
 
 					ctx.save();
+					
+					//把当前画布的原点移到(x,y),后面的操作都以(x,y)作为参照点， 
 					ctx.translate(xPos,(isRotated) ? this.endPoint + 12 : this.endPoint + 8);
-					ctx.rotate(toRadians(this.xLabelRotation)*-1);
+
+					//rotate方法旋转当前的绘图。
+					ctx.rotate( toRadians( this.xLabelRotation )*-1 );
+					
+
+					//画X轴文字
 					ctx.font = this.font;
 					ctx.textAlign = (isRotated) ? "right" : "center";
 					ctx.textBaseline = (isRotated) ? "middle" : "top";
@@ -2543,6 +2645,7 @@
 			//Set up tooltip events on the chart
 			if (this.options.showTooltips){
 				helpers.bindEvents(this, this.options.tooltipEvents, function(evt){
+
 					var activeSegments = (evt.type !== 'mouseout') ? this.getSegmentsAtEvent(evt) : [];
 
 					helpers.each(this.segments,function(segment){
@@ -2727,6 +2830,8 @@
 		name: "Line",
 		defaults : defaultConfig,
 		initialize:  function(data){
+
+			//创建新的点类
 			//Declare the extension of the default point, to cater for the options passed in to the constructor
 			this.PointClass = Chart.Point.extend({
 				strokeWidth : this.options.pointDotStrokeWidth,
@@ -2735,19 +2840,31 @@
 				hitDetectionRadius : this.options.pointHitDetectionRadius,
 				ctx : this.chart.ctx,
 				inRange : function(mouseX){
+
+					//用平方修正负数为正值，
 					return (Math.pow(mouseX-this.x, 2) < Math.pow(this.radius + this.hitDetectionRadius,2));
 				}
 			});
 
 			this.datasets = [];
 
+
+			//添加提示框事件
+
 			//Set up tooltip events on the chart
 			if (this.options.showTooltips){
+
+				//显示提示框事件绑定
 				helpers.bindEvents(this, this.options.tooltipEvents, function(evt){
+
+					//如果鼠标
 					var activePoints = (evt.type !== 'mouseout') ? this.getPointsAtEvent(evt) : [];
+
 					this.eachPoints(function(point){
 						point.restore(['fillColor', 'strokeColor']);
 					});
+
+
 					helpers.each(activePoints, function(activePoint){
 						activePoint.fillColor = activePoint.highlightFill;
 						activePoint.strokeColor = activePoint.highlightStroke;
@@ -2756,9 +2873,13 @@
 				});
 			}
 
+
+			//循环处理多个数据集
 			//Iterate through each of the datasets, and build this into a property of the chart
 			helpers.each(data.datasets,function(dataset){
 
+
+				//新建数据对象
 				var datasetObject = {
 					label : dataset.label || null,
 					fillColor : dataset.fillColor,
@@ -2768,9 +2889,11 @@
 					points : []
 				};
 
+
+				//添加到当前对象数据集中
 				this.datasets.push(datasetObject);
-
-
+				
+				//对数据对象添加每个点
 				helpers.each(dataset.data,function(dataPoint,index){
 					//Add a new point for each piece of data, passing any required data to draw.
 					datasetObject.points.push(new this.PointClass({
@@ -2783,7 +2906,9 @@
 						highlightStroke : dataset.pointHighlightStroke || dataset.pointStrokeColor
 					}));
 				},this);
+				
 
+				//画底盘
 				this.buildScale(data.labels);
 
 
@@ -2827,6 +2952,8 @@
 			return pointsArray;
 		},
 		buildScale : function(labels){
+
+			//
 			var self = this;
 
 			var dataTotal = function(){
@@ -2839,7 +2966,7 @@
 			};
 
 			var scaleOptions = {
-				templateString : this.options.scaleLabel,
+				templateString : this.options.scaleLabel,		//标签
 				height : this.chart.height,
 				width : this.chart.width,
 				ctx : this.chart.ctx,
@@ -2847,12 +2974,13 @@
 				fontSize : this.options.scaleFontSize,
 				fontStyle : this.options.scaleFontStyle,
 				fontFamily : this.options.scaleFontFamily,
+				//标签数量
 				valuesCount : labels.length,
 				beginAtZero : this.options.scaleBeginAtZero,
 				integersOnly : this.options.scaleIntegersOnly,
 				calculateYRange : function(currentHeight){
 					var updatedRanges = helpers.calculateScaleRange(
-						dataTotal(),
+						dataTotal(),	
 						currentHeight,
 						this.fontSize,
 						this.beginAtZero,
@@ -2873,6 +3001,8 @@
 				display : this.options.showScale
 			};
 
+
+			
 			if (this.options.scaleOverride){
 				helpers.extend(scaleOptions, {
 					calculateYRange: helpers.noop,
@@ -2959,6 +3089,7 @@
 				// Control points need to be calculated in a seperate loop, because we need to know the current x/y of the point
 				// This would cause issues when there is no animation, because the y of the next point would be 0, so beziers would be skewed
 				if (this.options.bezierCurve){
+
 					helpers.each(pointsWithValues, function(point, index){
 						var tension = (index > 0 && index < pointsWithValues.length - 1) ? this.options.bezierCurveTension : 0;
 						point.controlPoints = helpers.splineCurve(
