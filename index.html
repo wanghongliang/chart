@@ -5,8 +5,39 @@
 	</head>
 	<body>
 		<canvas id="myChart" width="400" height="400"></canvas>
-		<script type="text/javascript"  >
 		
+		<canvas id="myChart2" width="500" height="500" ></canvas>
+		<script type="text/javascript"  >
+		 function Round(src,pos){     
+             return Math.round(src*Math.pow(10, pos))/Math.pow(10, pos);             
+
+		}
+		function drawScreen(){  
+	            var context = document.getElementById("myChart2").getContext('2d');  
+	            
+	            
+	            var x1=100, y1=100, x2=120, y2=80, x3=180, y3=220, x4=200, y4=200;
+	              
+	            context.beginPath();  
+	            context.moveTo( x1, y1 );  
+	            context.bezierCurveTo( x2, y2, x3, y3, x4, y4 );  
+	    
+	            context.stroke();  
+	            
+	            
+	            
+	            context.font = 'bold 12px arial';
+        		context.textAlign = 'left';
+        		context.textBaseline = 'top';
+        		context.strokeStyle = '#DF5326';
+       			context.strokeText( x1+","+y1,  x1, y1 );
+       			context.strokeText( x2+","+y2,  x2, y2 );
+       			context.strokeText( x3+","+y3,  x3, y3 );
+       			context.strokeText( x4+","+y4,  x4, y4 );
+        
+	              
+	            context.closePath();  
+	    }  
 		var t = Math.log( 7.3890 );
 		//alert( Math.pow(10,2) );
 		//alert( Math.floor( Math.log( 100 )/Math.LN10 ) + ":" + Math.LN10 );
@@ -25,16 +56,22 @@
 								strokeColor : "rgba(151,187,205,1)",
 								pointColor : "rgba(151,187,205,1)",
 								pointStrokeColor : "#fff",
-								data : [28,48,40,19,96,27,1201]
+								data : [28,48,40,19,96,27,201]
 							}
 						]
 					}
 
 					var ctx = document.getElementById("myChart").getContext("2d");
 					new Chart(ctx).Line(data,{});
+					drawScreen();
 					
-					
+				 Chart = function(){};
+				 var helpers = Chart.helpers = {};
+				 var each = helpers.each = function(){
+				 	alert( "ok");
+				 };
 				 
+				 Chart.helpers.each();
 		</script>
 	</body>
 	

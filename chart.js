@@ -307,11 +307,13 @@
 
 			 
 			//判断扩展参数是否有构造方法
-			var ChartElement = (extensions && extensions.hasOwnProperty("constructor")) ? extensions.constructor : function(){ return parent.apply(this, arguments); };
+			var ChartElement = (extensions && extensions.hasOwnProperty("constructor")) ? extensions.constructor : function(){ 
+				return parent.apply(this, arguments); 
+			};
 				
 			//alert( ChartElement );
 			 
-			var Surrogate = function(){ this.constructor = ChartElement;};
+			var Surrogate = function(){ this.constructor = ChartElement; };
 			Surrogate.prototype = parent.prototype;
 
 			// 重写Class构造函数的prototype，使其不再指向了Class原生的原型对象，而是指向了proto，即当前对象（类）的一个实例
@@ -326,6 +328,8 @@
 
 			return ChartElement;
 		},
+
+
 		noop = helpers.noop = function(){},
 		uid = helpers.uid = (function(){
 			var id=0;
@@ -432,7 +436,7 @@
 					y : MiddlePoint.y-fa*(AfterPoint.y-FirstPoint.y)
 				},
 				outer : {
-					x: MiddlePoint.x+fb*(AfterPoint.x-FirstPoint.x),
+					x:	MiddlePoint.x+fb*(AfterPoint.x-FirstPoint.x),
 					y : MiddlePoint.y+fb*(AfterPoint.y-FirstPoint.y)
 				}
 			};
@@ -506,7 +510,7 @@
 				//alert(  "maxValue" + maxValue + " rangeOrderOfMagnitude" + rangeOrderOfMagnitude +  " graphMax" + graphMax + " graphMin" + graphMin + " graphRange" + graphRange + " stepValue" + stepValue);
 				
 
-				alert( "numberOfSteps" + numberOfSteps);
+				//alert( "numberOfSteps" + numberOfSteps);
 
 
 			//If we have more space on the graph we'll use it to give more definition to the data
@@ -2834,13 +2838,13 @@
 			//创建新的点类
 			//Declare the extension of the default point, to cater for the options passed in to the constructor
 			this.PointClass = Chart.Point.extend({
-				strokeWidth : this.options.pointDotStrokeWidth,
-				radius : this.options.pointDotRadius,
-				display: this.options.pointDot,
-				hitDetectionRadius : this.options.pointHitDetectionRadius,
+				strokeWidth : this.options.pointDotStrokeWidth,                 //笔画宽度
+				radius : this.options.pointDotRadius,                           //半径
+				display: this.options.pointDot,                                 //显示
+				hitDetectionRadius : this.options.pointHitDetectionRadius,      //检测点的半径
 				ctx : this.chart.ctx,
 				inRange : function(mouseX){
-
+                    
 					//用平方修正负数为正值，
 					return (Math.pow(mouseX-this.x, 2) < Math.pow(this.radius + this.hitDetectionRadius,2));
 				}
@@ -3091,11 +3095,14 @@
 				if (this.options.bezierCurve){
 
 					helpers.each(pointsWithValues, function(point, index){
+
+
 						var tension = (index > 0 && index < pointsWithValues.length - 1) ? this.options.bezierCurveTension : 0;
+
 						point.controlPoints = helpers.splineCurve(
-							previousPoint(point, pointsWithValues, index),
+							previousPoint( point, pointsWithValues, index ),
 							point,
-							nextPoint(point, pointsWithValues, index),
+							nextPoint( point, pointsWithValues, index ),
 							tension
 						);
 
@@ -3132,7 +3139,25 @@
 					else{
 						if(this.options.bezierCurve){
 							var previous = previousPoint(point, pointsWithValues, index);
+							
+							/***
+							alert( 
+								index + " = " + 
+								Math.ceil( previous.controlPoints.outer.x )
+								+ ", y" + 
+								Math.ceil( previous.controlPoints.outer.y )
+								+ ", x" +
+								Math.ceil( point.controlPoints.inner.x )
+								+ ", y" +
+								Math.ceil( point.controlPoints.inner.y )
+								+ ", x" +
+								Math.ceil( point.x )
+								+ ", y" +
+								Math.ceil( point.y )
+								
+								);
 
+							**/
 							ctx.bezierCurveTo(
 								previous.controlPoints.outer.x,
 								previous.controlPoints.outer.y,
