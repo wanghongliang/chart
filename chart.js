@@ -517,30 +517,22 @@
 
 
 			//网格的数量*2 > 最大的数量 不用处理
-			while( ( numberOfSteps > maxSteps || ( numberOfSteps * 2 ) < maxSteps ) && !skipFitting) {
-
-
+			while( ( numberOfSteps > maxSteps || ( numberOfSteps * 2 ) < maxSteps ) && !skipFitting) { 
 				//如果当前 网格数量 大于 最大网格数量
-				if( numberOfSteps > maxSteps ){
-
-					stepValue *=2;
-
-					numberOfSteps = Math.round(graphRange/stepValue);
-
+				if( numberOfSteps > maxSteps ){ 
+					stepValue *=2; 
+					numberOfSteps = Math.round(graphRange/stepValue); 
 					// Don't ever deal with a decimal number of steps - cancel fitting and just use the minimum number of steps.
 					if (numberOfSteps % 1 !== 0){
 						skipFitting = true;
 					}
 				}
 				//We can fit in double the amount of scale points on the scale
-				else{
-
-
+				else{ 
 					//如果必需是整数的话
 					//If user has declared ints only, and the step value isn't a decimal
 					if (integersOnly && rangeOrderOfMagnitude >= 0){
 						//If the user has said integers only, we need to check that making the scale more granular wouldn't make it a float
-
 						//10 的次方
 						if(stepValue/2 % 1 === 0){
 							stepValue /=2;
@@ -566,11 +558,37 @@
 			}
 
 			return {
-				steps : numberOfSteps,		//网格的数量
-				stepValue : stepValue,		//网格的间距
-				min : graphMin,				//最小值
-				max	: graphMin + (numberOfSteps * stepValue) //最大值
+				steps : numberOfSteps,								//网格的数量
+				stepValue : stepValue,								//网格的间距
+				min : graphMin,										//最小值
+				max	: graphMin + (numberOfSteps * stepValue)		//最大值
 			};
+
+		},
+		calculateScaleRange2 = helpers.calculateScaleRange2 = function( valuesArray, drawingSize, textSize, startFromZero, integersOnly){
+			var minSteps = 2,
+				maxSteps = Math.floor( drawingSize/(textSize * 1.5) ),
+				skipFitting = ( minSteps >= maxSteps );
+
+			var maxValue = max(valuesArray),
+				minValue = min(valuesArray);
+
+			// We need some degree of seperation here to calculate the scales if all the values are the same
+			// Adding/minusing 0.5 will give us a range of 1.
+
+
+			//
+			if (maxValue === minValue){
+				maxValue += 0.5;
+				// So we don't end up with a graph with a negative start value if we've said always start from zero
+				if (minValue >= 0.5 && !startFromZero){
+					minValue -= 0.5;
+				}
+				else{
+					// Make up a whole number above the values
+					maxValue += 0.5;
+				}
+			}
 
 		},
 		/* jshint ignore:start */
@@ -1672,25 +1690,20 @@
 
 		initialize : function(){
 			this.fit();
-		},
-
+		}, 
 		//处理Y轴上的文本
-		buildYLabels : function(){
-
+		buildYLabels : function(){ 
 			//Y轴标签
-			this.yLabels = [];
-			
+			this.yLabels = []; 
 			//小数的位数
 			var stepDecimalPlaces = getDecimalPlaces( this.stepValue ); 
-			for (var i=0; i<=this.steps; i++){
-
+			for (var i=0; i<=this.steps; i++){ 
 				//
 				this.yLabels.push(template(this.templateString,{value:(this.min + (i * this.stepValue)).toFixed( stepDecimalPlaces ) }));
-			}
+			} 
+			//Y轴上宽度
 			this.yLabelWidth = (this.display && this.showLabels) ? longestText(this.ctx,this.font,this.yLabels) : 0;
-		},
-
-
+		}, 
 		addXLabel : function(label){
 			this.xLabels.push(label);
 			this.valuesCount++;
@@ -1714,7 +1727,7 @@
 			//endPoint  = 画布高度
 
 			// To do that we need the base line at the top and base of the chart, assuming there is no x label rotation
-			this.startPoint		= (this.display) ? this.fontSize : 0;
+			this.startPoint		= (this.display) ? this.fontSize : 0;			//起点是画布的左上角 0,0
 			this.endPoint		= (this.display) ? this.height - (this.fontSize * 1.5) - 5 : this.height; // -5 to pad labels
 			
 			// Apply padding settings to the start and end point.
@@ -1860,10 +1873,13 @@
 
 					//Y轴 画标签的位置
 					var yLabelCenter = this.endPoint - (yLabelGap * index),
-
+					
 						//
 						linePositionY = Math.round(yLabelCenter),
 						drawHorizontalLine = this.showHorizontalLines;
+					
+					//alert( yLabelCenter );
+
 
 					ctx.textAlign		= "right";
 					ctx.textBaseline	= "middle";
@@ -2773,6 +2789,8 @@
 	});
 
 }).call(this);
+
+
 (function(){
 	"use strict";
 
@@ -2829,7 +2847,7 @@
 
 	};
 
-
+	
 	Chart.Type.extend({
 		name: "Line",
 		defaults : defaultConfig,
@@ -2843,8 +2861,7 @@
 				display: this.options.pointDot,                                 //显示
 				hitDetectionRadius : this.options.pointHitDetectionRadius,      //检测点的半径
 				ctx : this.chart.ctx,
-				inRange : function(mouseX){
-                    
+				inRange : function(mouseX){ 
 					//用平方修正负数为正值，
 					return (Math.pow(mouseX-this.x, 2) < Math.pow(this.radius + this.hitDetectionRadius,2));
 				}
@@ -2853,22 +2870,17 @@
 			this.datasets = [];
 
 
-			//添加提示框事件
-
+			//添加提示框事件 
 			//Set up tooltip events on the chart
-			if (this.options.showTooltips){
-
+			if (this.options.showTooltips){ 
 				//显示提示框事件绑定
-				helpers.bindEvents(this, this.options.tooltipEvents, function(evt){
-
+				helpers.bindEvents(this, this.options.tooltipEvents, function(evt){ 
 					//如果鼠标
-					var activePoints = (evt.type !== 'mouseout') ? this.getPointsAtEvent(evt) : [];
-
+					var activePoints = (evt.type !== 'mouseout') ? this.getPointsAtEvent(evt) : []; 
 					this.eachPoints(function(point){
 						point.restore(['fillColor', 'strokeColor']);
 					});
-
-
+ 
 					helpers.each(activePoints, function(activePoint){
 						activePoint.fillColor = activePoint.highlightFill;
 						activePoint.strokeColor = activePoint.highlightStroke;
