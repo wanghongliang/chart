@@ -1095,7 +1095,7 @@
 			// Only redraw the chart if we've actually changed what we're hovering on.
 			if (typeof this.activeElements === 'undefined') this.activeElements = [];
 
-
+		
 			//判断元素是否变了
 			var isChanged = (function(Elements){
 				var changed = false;
@@ -1376,6 +1376,8 @@
 		},
 		draw : function(){
 			if (this.display){
+
+			 
 				var ctx = this.ctx;
 				ctx.beginPath();
 
