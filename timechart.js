@@ -12,20 +12,84 @@
 		initialize : function(){
 			this.fit();
 		},
-		//´¦ÀíYÖáÉÏµÄÎÄ±¾
+		fit: function(){
+			// First we need the width of the yLabels, assuming the xLabels aren't rotated
+			
+
+			//startPoint = ç”»å¸ƒç›¸å¯¹å·¦ä¸Šè§’çš„è±¡ç‡
+			//endPoint  = ç”»å¸ƒé«˜åº¦
+
+			// To do that we need the base line at the top and base of the chart, assuming there is no x label rotation
+			this.startPoint		= (this.display) ? this.fontSize : 0;			//èµ·ç‚¹æ˜¯ç”»å¸ƒçš„å·¦ä¸Šè§’ 0,0
+			this.endPoint		= (this.display) ? this.height - (this.fontSize * 1.5) - 5 : this.height; // -5 to pad labels
+			
+			// Apply padding settings to the start and end point.
+			this.startPoint		+= this.padding;
+			this.endPoint		+= this.padding;
+
+			this.startPoint		=	20;
+			this.endPoint		-= this.height*0.2;
+
+				
+			this.volumeStartPoint	= this.endPoint + 30;
+			this.volumeEndPoint		= this.height-10;
+
+		
+			//this.startPoint	 = 0;
+			//alert( this.startPoint );
+
+			// Cache the starting height, so can determine if we need to recalculate the scale yAxis
+			var cachedHeight = this.endPoint - this.startPoint,
+				cachedYLabelWidth;
+
+			// Build the current yLabels so we have an idea of what size they'll be to start
+			/*
+			 *	This sets what is returned from calculateScaleRange as static properties of this class:
+			 *
+				this.steps;
+				this.stepValue;
+				this.min;
+				this.max;
+			 *
+			 */
+			this.calculateYRange(cachedHeight);
+
+			// With these properties set we can now build the array of yLabels
+			// and also the width of the largest yLabel
+			this.buildYLabels();
+
+			this.calculateXLabelRotation();
+
+			while( (cachedHeight > this.endPoint - this.startPoint) ){
+				cachedHeight = this.endPoint - this.startPoint;
+				cachedYLabelWidth = this.yLabelWidth;
+
+				this.calculateYRange(cachedHeight);
+				this.buildYLabels();
+
+				// Only go through the xLabel loop again if the yLabel width has changed
+				if (cachedYLabelWidth < this.yLabelWidth){
+					this.calculateXLabelRotation();
+				}
+			}
+
+		},
+		//å¤„ç†Yè½´ä¸Šçš„æ–‡æœ¬
 		buildYLabels : function(){ 
-			//YÖá±êÇ©
+
+			 
+			//Yè½´æ ‡ç­¾
 			this.yLabels = []; 
-			//Ğ¡ÊıµÄÎ»Êı
+			//å°æ•°çš„ä½æ•°
 			var stepDecimalPlaces = 2; //helpers.getDecimalPlaces( this.stepValue ); 
 			for (var i=0; i<=this.steps; i++){ 
 				//
 				this.yLabels.push( helpers.template(this.templateString,{value:(this.min + (i * this.stepValue)).toFixed( stepDecimalPlaces ) }));
 			} 
-			//YÖáÉÏ¿í¶È
-			this.yLabelWidth = (this.display && this.showLabels) ? helpers.longestText(this.ctx,this.font,this.yLabels) : 0;
+			//Yè½´ä¸Šå®½åº¦
+			this.yLabelWidth = 35;// (this.display && this.showLabels) ? helpers.longestText(this.ctx,this.font,this.yLabels) : 0;
 		}, 
-		//¸ù¾İÊı¾İË÷Òı»ñÈ¡·ÖÖÓ×Ö·û´®
+		//æ ¹æ®æ•°æ®ç´¢å¼•è·å–åˆ†é’Ÿå­—ç¬¦ä¸²
 		getMinute: function( index ){ 
 			if( index>120 ) index+=90;
 			var d = new Date( this.startTime+index*60*1000 ); 
@@ -41,9 +105,18 @@
 			var scalingFactor = this.drawingArea() / ( s1 * -2 );  
 			return this.endPoint - (scalingFactor *  (s1+value) );
 		},
+		calculateVolX:function(value){
+		},
+		calculateVolY:function(value){
+			//(this.volumeMax-this.volumeMin )/ ( this.volumeEndPoint-this.volumeStartPoint );
+			var scalingFactor = (this.volumeEndPoint-this.volumeStartPoint ) / (this.volumeMin - this.volumeMax); 
+
+			//alert( scalingFactor + ":" + (scalingFactor * (value - this.volumeMin) ) );
+			return this.volumeEndPoint + (scalingFactor * (value - this.volumeMin));
+		},
 		draw : function(){
 			var ctx = this.ctx,
-				yLabelGap = (this.endPoint - this.startPoint) / this.steps,		//YÖá±êÇ©µÄÊıÁ¿
+				yLabelGap = (this.endPoint - this.startPoint) / this.steps,		//Yè½´æ ‡ç­¾çš„æ•°é‡
 				xStart = Math.round(this.xScalePaddingLeft);
 
 			//alert( this.display );
@@ -51,11 +124,10 @@
 				ctx.fillStyle = this.textColor;
 				ctx.font = this.font;
 				
-				
-				this.showVerticalLines = false; 
+				 
+				this.showVerticalLines = false;  
 
-
-				//ÏÈ»­YÖá
+				//å…ˆç”»Yè½´
 				for( var index=0; index<=this.valuesCount; index++ ){
 						var xPos = this.calculateX(index) +  helpers.aliasPixel(this.lineWidth),
 						// Check to see if line/bar here and decide where to place the line
@@ -131,15 +203,17 @@
 					ctx.closePath(); 
 					ctx.save();
 					
-					//°Ñµ±Ç°»­²¼µÄÔ­µãÒÆµ½(x,y),ºóÃæµÄ²Ù×÷¶¼ÒÔ(x,y)×÷Îª²ÎÕÕµã£¬ 
+					//æŠŠå½“å‰ç”»å¸ƒçš„åŸç‚¹ç§»åˆ°(x,y),åé¢çš„æ“ä½œéƒ½ä»¥(x,y)ä½œä¸ºå‚ç…§ç‚¹ï¼Œ 
 					ctx.translate(xPos,(isRotated) ? this.endPoint + 12 : this.endPoint + 8);
 
-					//rotate·½·¨Ğı×ªµ±Ç°µÄ»æÍ¼¡£
+					//rotateæ–¹æ³•æ—‹è½¬å½“å‰çš„ç»˜å›¾ã€‚
 					//ctx.rotate(  helpers.radians( this.xLabelRotation )*-1 );
 					
 
-					//»­XÖáÎÄ×Ö
+					//ç”»Xè½´æ–‡å­—
 					ctx.font = this.font;
+
+					//alert( this.font );
 					//ctx.textAlign = (isRotated) ? "right" : "center";
 					//ctx.textBaseline = (isRotated) ? "middle" : "top";
 					//if( this.valuesCount == index ){
@@ -166,11 +240,11 @@
 					
 				this.centerValue = centerValue;
 					
-				//»­YÖáĞÅÏ¢
+				//ç”»Yè½´ä¿¡æ¯
 				helpers.each(this.yLabels,function(labelString,index){
 
 
-					//YÖá »­±êÇ©µÄÎ»ÖÃ
+					//Yè½´ ç”»æ ‡ç­¾çš„ä½ç½®
 					var yLabelCenter = this.endPoint - (yLabelGap * index),
 					
 						//
@@ -183,7 +257,7 @@
 					ctx.textAlign		= "right";
 					ctx.textBaseline	= "middle";
 					
-					//»­YÖáÉÏµÄÎÄ×Ö
+					//ç”»Yè½´ä¸Šçš„æ–‡å­—
 					if (this.showLabels){
 						ctx.fillText( labelString, xStart - 10, yLabelCenter);
 
@@ -216,12 +290,14 @@
 					if( centerIndex == index ){
 						//ctx.strokeStyle = "rgba(200,200,220,1)";
 						//ctx.lineWidth = 1;
-						ctx.strokeStyle = "rgba( 200,200,255,1)";
+						ctx.strokeStyle = "rgba( 255,100,155,1)";
 					}
-					//»­Ë®Æ½Ïß
+					//ç”»æ°´å¹³çº¿
 					if(drawHorizontalLine){ 
+
+						//alert( xStart + ":" + this.width );
 						ctx.moveTo( xStart, linePositionY );
-						ctx.lineTo(this.width, linePositionY);
+						ctx.lineTo(this.width, linePositionY); 
 						ctx.stroke();
 						ctx.closePath(); 
 					}
@@ -231,12 +307,77 @@
 
 					ctx.beginPath();
 					ctx.moveTo(		xStart - 5,		linePositionY	);
-					ctx.lineTo(		xStart,			linePositionY	);
-
+					ctx.lineTo(		xStart,			linePositionY	); 
 					ctx.stroke();
-					ctx.closePath();
-
+					ctx.closePath(); 
 				},this); 
+
+
+				//this.volumeMax			=	300;
+				//this.volumeMin			=	30;
+				//this.volumeSetup		=	3;
+				//this.volumeSetupValue	=	(this.volumeMax-this.volumeMin )/ ( this.volumeSetup );
+				
+
+				//alert( this.volumeMax );
+
+				this.volumeScaleY		=   (this.volumeMax-this.volumeMin )/ ( this.volumeEndPoint-this.volumeStartPoint );
+
+
+				//ç”»åº•éƒ¨é‡èƒ½çš„å˜åŒ–
+				//ctx.strokeStyle="red";//è½®å»“é¢œè‰²
+				//ctx.lineWidth  = 0.5;
+				
+				//this.volumeStartPoint Yåæ ‡çš„å¼€å§‹ä½ç½®
+				//this.volumeEndPoint Yåæ ‡çš„ç»“æŸä½ç½®
+				//this.width-xStart å®½åº¦
+				//this.volumeEndPoint-this.volumeStartPoint é«˜åº¦
+				//ctx.strokeRect( xStart, this.volumeStartPoint, this.width-xStart, this.volumeEndPoint-this.volumeStartPoint);//ç»˜åˆ¶çŸ©å½¢è½®å»“
+
+			 
+				//alert( this.volumeEndPoint );
+
+				//alert( (this.volumeEndPoint-this.volumeStartPoint) * this.volumeScaleY );
+
+				//äº”æ—¥å‡é‡çš„çº¿
+
+				var linePositionY = 0;
+
+
+				for(var i=0; i<=this.volumeSetup; i++ ){
+					
+					if( i>10 ){
+					}else{
+						linePositionY = parseInt(this.volumeEndPoint-( i*this.volumeSetupValue )/this.volumeScaleY )+0.5;// this.volumeStartPoint+(i*this.volumeSetupValue);
+						
+
+
+						//alert( i*this.volumeSetupValue ); 
+						var leftText = parseInt( ( (i*this.volumeSetupValue))+this.volumeMin );
+						if( i===0 ){
+							leftText = "æ‰‹";
+						}
+						//alert( linePositionY );
+						ctx.textAlign		= "right";
+						ctx.textBaseline	= "middle"; 
+						ctx.fillText(   leftText,	xStart - 10, linePositionY);
+
+						//ctx.textAlign		= "left"
+						//ctx.fillText(   leftText,  this.width+5, linePositionY); 
+						//ctx.lineWidth		= 0.5;
+
+						//ctx.strokeStyle		= "rgba(100,100,100,0.5)";
+
+
+						//alert( xStart + ":" + this.width );
+
+						ctx.beginPath();
+						ctx.moveTo(		xStart,					linePositionY	);
+						ctx.lineTo(		this.width-2,			linePositionY	); 
+						ctx.stroke();
+						ctx.closePath(); 
+					}
+				}
 			}
 		}
 
@@ -244,26 +385,27 @@
 
 
 
+ 
 	var defaultConfig = {
  
-		scaleShowGridLines : true,					//Í¼±íÖĞÊÇ·ñÏÔÊ¾Íø¸ñ 
-		scaleGridLineColor : "rgba(220,220,250,0.5)",		//Íø¸ñµÄÑÕÉ« 
-		scaleGridLineWidth : 1,						//Íø¸ñµÄÏß¿í 
-		scaleShowHorizontalLines: true,				// X ÖáÏßÊÇ·ñÏÔÊ¾ 
-		scaleShowVerticalLines: true,				// Y ÖáÏßÊÇ·ñÏÔÊ¾ 
-		bezierCurve : false,							//ÊÇ·ñÎªÇúÏß 
-		bezierCurveTension : 0.4,					//ÇúÏßµÄÖµ 
-		pointDot : true,							//ÊÇ·ñÏÔÊ¾ÏßÉÏµÄÃ¿¸öµã 
-		pointDotRadius : 3,							//Ô²µãµÄ°ë¾¶ 
-		pointDotStrokeWidth : 1,					//±Ê»­µÄ¿í¶È 
-		pointHitDetectionRadius : 3,				//Êó±ê¼ì²âµãµÄ°ë¾¶ 
-		datasetStroke : false,						//ÊÇ·ñÏÔÊ¾Êı¾İµÄ±Ê»­ 
-		datasetStrokeWidth :1,						//ÏßµÄ±Ê»­¿í¶È
-		datasetFill : true,							//Ìî³äÑÕÉ«
+		scaleShowGridLines : true,					//å›¾è¡¨ä¸­æ˜¯å¦æ˜¾ç¤ºç½‘æ ¼ 
+		scaleGridLineColor : "rgba(220,220,250,0.5)",		//ç½‘æ ¼çš„é¢œè‰² 
+		scaleGridLineWidth : 1,						//ç½‘æ ¼çš„çº¿å®½ 
+		scaleShowHorizontalLines: true,				// X è½´çº¿æ˜¯å¦æ˜¾ç¤º 
+		scaleShowVerticalLines: true,				// Y è½´çº¿æ˜¯å¦æ˜¾ç¤º 
+		bezierCurve : false,							//æ˜¯å¦ä¸ºæ›²çº¿ 
+		bezierCurveTension : 0.4,					//æ›²çº¿çš„å€¼ 
+		pointDot : true,							//æ˜¯å¦æ˜¾ç¤ºçº¿ä¸Šçš„æ¯ä¸ªç‚¹ 
+		pointDotRadius : 3,							//åœ†ç‚¹çš„åŠå¾„ 
+		pointDotStrokeWidth : 1,					//ç¬”ç”»çš„å®½åº¦ 
+		pointHitDetectionRadius : 3,				//é¼ æ ‡æ£€æµ‹ç‚¹çš„åŠå¾„ 
+		datasetStroke : false,						//æ˜¯å¦æ˜¾ç¤ºæ•°æ®çš„ç¬”ç”» 
+		datasetStrokeWidth :1,						//çº¿çš„ç¬”ç”»å®½åº¦
+		datasetFill : true,							//å¡«å……é¢œè‰²
 		
 		animation:false,
 
-		//Í¼±ê±êÌâÄ£°å
+		//å›¾æ ‡æ ‡é¢˜æ¨¡æ¿
 		legendTemplate : "<ul class=\"<%=name.toLowerCase()%>-legend\"><% for (var i=0; i<datasets.length; i++){%><li><span style=\"background-color:<%=datasets[i].strokeColor%>\"></span><%if(datasets[i].label){%><%=datasets[i].label%><%}%></li><%}%></ul>"
 
 	};
@@ -280,7 +422,7 @@
 			this.options.boxNode.style.position = 'relative';
 			this.options.chartNode.style.cssText = 'position:absolute;left:0px;top:0px;';  
 
-			//´´½¨Êó±êÊÂ¼ş´¦ÀíÃæ°å
+			//åˆ›å»ºé¼ æ ‡äº‹ä»¶å¤„ç†é¢æ¿
 			var mouseCVS = document.createElement("canvas");
 			//mouseCVS.id = "canvas-mouse-" + this.index;
 		 
@@ -295,15 +437,15 @@
 
  
 
-			//´´½¨ĞÂµÄµãÀà 
+			//åˆ›å»ºæ–°çš„ç‚¹ç±» 
 			this.PointClass = Chart.Point.extend({
-				strokeWidth : this.options.pointDotStrokeWidth,                 //±Ê»­¿í¶È
-				radius : this.options.pointDotRadius,                           //°ë¾¶
-				display: this.options.pointDot,                                 //ÏÔÊ¾
-				hitDetectionRadius : this.options.pointHitDetectionRadius,      //¼ì²âµãµÄ°ë¾¶ 
+				strokeWidth : this.options.pointDotStrokeWidth,                 //ç¬”ç”»å®½åº¦
+				radius : this.options.pointDotRadius,                           //åŠå¾„
+				display: this.options.pointDot,                                 //æ˜¾ç¤º
+				hitDetectionRadius : this.options.pointHitDetectionRadius,      //æ£€æµ‹ç‚¹çš„åŠå¾„ 
 				ctx : this.mouseCtx,//this.chart.ctx,
 				inRange : function(mouseX){ 
-					//ÓÃÆ½·½ĞŞÕı¸ºÊıÎªÕıÖµ£¬
+					//ç”¨å¹³æ–¹ä¿®æ­£è´Ÿæ•°ä¸ºæ­£å€¼ï¼Œ
 					//return (Math.pow(mouseX-this.x, 2) < Math.pow(this.radius + this.hitDetectionRadius,2));  
 					return ( Math.pow(mouseX-this.x, 2) < Math.pow(  this.hitDetectionRadius,2 ) );
 				}
@@ -313,14 +455,14 @@
 			this.datasets = [];
 
 
-			//Ìí¼ÓÌáÊ¾¿òÊÂ¼ş 
+			//æ·»åŠ æç¤ºæ¡†äº‹ä»¶ 
 			//Set up tooltip events on the chart
 			if (this.options.showTooltips){ 
 
 				var timelineObject = this;
-				//ÏÔÊ¾ÌáÊ¾¿òÊÂ¼ş°ó¶¨
+				//æ˜¾ç¤ºæç¤ºæ¡†äº‹ä»¶ç»‘å®š
 				helpers.bindEvents({chart:this.mouseCtx}, ["mousemove"], function(evt){ 
-					//Èç¹ûÊó±ê
+					//å¦‚æœé¼ æ ‡
 					var activePoints = (evt.type !== 'mouseout') ? timelineObject.getPointsAtEvent(evt) : []; 
 
 					var pos =  helpers.getRelativePosition( evt );
@@ -338,32 +480,34 @@
 
 
 			var b = false;
-			//µ×ÅÌ
-			this.buildScale( data );
+			this.volPoints = [];
 
 
-			//Ñ­»·´¦Àí¶à¸öÊı¾İ¼¯
+			//å¾ªç¯å¤„ç†å¤šä¸ªæ•°æ®é›†
 			//Iterate through each of the datasets, and build this into a property of the chart
 			helpers.each(data.datasets,function(dataset){ 
-				//ĞÂ½¨Êı¾İ¶ÔÏó
+				//æ–°å»ºæ•°æ®å¯¹è±¡
 				var datasetObject = {
 					label :				dataset.label || null,
+					mainData :			dataset.mainData,
+					avgVolume5:			dataset.avgVolume5,
 					preClose:			dataset.preClose,
 					fillColor :			dataset.fillColor,
 					strokeColor :		dataset.strokeColor,
 					pointColor :		dataset.pointColor,
 					pointStrokeColor :	dataset.pointStrokeColor,
+					volPoints:[],
 					points : []
 				}; 
-				//Ìí¼Óµ½µ±Ç°¶ÔÏóÊı¾İ¼¯ÖĞ
+				//æ·»åŠ åˆ°å½“å‰å¯¹è±¡æ•°æ®é›†ä¸­
 				this.datasets.push(datasetObject);
 				
-				//¶ÔÊı¾İ¶ÔÏóÌí¼ÓÃ¿¸öµã
+				//å¯¹æ•°æ®å¯¹è±¡æ·»åŠ æ¯ä¸ªç‚¹
 				helpers.each(dataset.data,function(dataPoint,index){
 					//Add a new point for each piece of data, passing any required data to draw.
 					datasetObject.points.push(new this.PointClass({
 						value :				dataPoint, 
-						label :				index+1,			//¹«ÓÃµÄÊı¾İlabel
+						label :				index+1,			//å…¬ç”¨çš„æ•°æ®label
 						datasetLabel:		dataset.label,
 						strokeColor :		dataset.pointStrokeColor,
 						fillColor :			dataset.pointColor,
@@ -372,13 +516,27 @@
 					}));
 				},this);
 				
+				
+				if( dataset.mainData ){
+					//æŠŠé‡çš„å€¼ä¿å­˜
+					helpers.each(dataset.volumes,function(dataPoint,index){
+
+						this.volPoints.push(new Chart.Point({
+							value:dataPoint
+						}));
+					},this); 
+				}
+
+
+				//alert( "æ•°ç»„é•¿åº¦:" + datasetObject.volPoints.length );
 				//if( b == false ){
 				//	b = true;
 					
 				//}
+				//åº•ç›˜
+				this.buildScale( data );
 
-
-				//»­µã¼°Ïß
+				//ç”»ç‚¹åŠçº¿
 				this.eachPoints(function(point, index){
 					helpers.extend(point, {
 						x: this.scale.calculateX(index),
@@ -409,6 +567,11 @@
 				helpers.each(dataset.points,callback,this);
 			},this);
 		},
+		eachVolumePoints : function(callback){
+			//helpers.each(this.datasets,function(dataset){
+				helpers.each(this.volPoints,callback,this);
+			//},this);
+		},
 		getPointsAtEvent : function(e){
 			var pointsArray = [],
 				eventPosition = helpers.getRelativePosition(e);
@@ -421,9 +584,12 @@
 						//alert( point.x );
 					//	pointsArray.push(point);
 					//}
-					if (point.inRange(eventPosition.x,eventPosition.y)) pointsArray.push(point);
 
-					return pointsArray;
+					
+					if ( dataset.mainData && point.inRange(eventPosition.x,eventPosition.y)){
+						pointsArray.push(point); 
+						return pointsArray; 
+					}
 				});
 			},this);
 			return pointsArray;
@@ -457,12 +623,21 @@
 			maxV = mainCenterValue*(100+maxScaleV)/100;
 			minV = mainCenterValue*(100-maxScaleV)/100;
 
+			var dataTotal = function(){
+				var values = [];
+				self.eachVolumePoints(function(point){
+				 
+					values.push(point.value);
+				}); 
+				return values;
+			};
+
 
 			//alert( maxV + ", " + minV + ", " + maxScaleV);
 			
 			var scaleOptions = {
 				startTime:(new Date("2011/11/11 9:30:00")).getTime(), //
-				templateString :	this.options.scaleLabel,		//±êÇ©
+				templateString :	this.options.scaleLabel,		//æ ‡ç­¾
 				height :			this.chart.height,
 				width : this.chart.width-50,
 				ctx : this.chart.ctx,
@@ -470,7 +645,7 @@
 				fontSize : this.options.scaleFontSize,
 				fontStyle : this.options.scaleFontStyle,
 				fontFamily : this.options.scaleFontFamily,
-				//±êÇ©ÊıÁ¿
+				//æ ‡ç­¾æ•°é‡
 				valuesCount : 240,//labels.length,
 				beginAtZero : this.options.scaleBeginAtZero,
 				integersOnly : this.options.scaleIntegersOnly,
@@ -485,14 +660,25 @@
 					//var m = helpers.max( [maxV-centerV, centerV-minV] );
 					//minV = centerV - m;
 					//maxV = centerV + m;
+					
+					var valuesArray = dataTotal();
+					var volumeMax			=	helpers.max( valuesArray );
+					var volumeMin			=	helpers.min( valuesArray );
+					var volumeSetup			=	self.options.volumeSetup;
+					var volumeSetupValue	=	( volumeMax-volumeMin )/ ( volumeSetup );
 
-
-					//alert( valuesArray.length );
+					//alert(volumeMax );
 					var updatedRanges = {
-						min:minV,								//Íø¸ñµÄÊıÁ¿
-						max:maxV,								//Íø¸ñµÄ¼ä¾à
-						steps:stepNumber,						//×îĞ¡Öµ
-						stepValue: ( maxV-minV )/stepNumber		//×î´óÖµ
+
+						volumeMax:volumeMax,
+						volumeMin:volumeMin,
+						volumeSetup:volumeSetup,
+						volumeSetupValue:volumeSetupValue, 
+
+						min:minV,								//ç½‘æ ¼çš„æ•°é‡
+						max:maxV,								//ç½‘æ ¼çš„é—´è·
+						steps:stepNumber,						//æœ€å°å€¼
+						stepValue: ( maxV-minV )/stepNumber		//æœ€å¤§å€¼
 					};
 					helpers.extend(this, updatedRanges);
 
@@ -603,7 +789,17 @@
 						}, easingDecimal);
 					}
 				},this);
-
+			
+				helpers.each(this.volPoints, function(point, index){
+					if (point.hasValue()){
+						point.transition({
+							//y : this.scale.calculateY(point.value),
+							y : this.scale.calculateYByScale( point.value/ dataset.preClose*100-100 ),//this.scale.calculateY(point.value),
+							x : this.scale.calculateX(index)+0.5
+						}, easingDecimal);
+					}
+				},this);
+				//alert( dataset.volPoints[0].value );
 
 				// Control points need to be calculated in a seperate loop, because we need to know the current x/y of the point
 				// This would cause issues when there is no animation, because the y of the next point would be 0, so beziers would be skewed
@@ -672,8 +868,7 @@
 								+ ", y" +
 								Math.ceil( point.y )
 								
-								);
-
+								); 
 							**/
 							ctx.bezierCurveTo(
 								previous.controlPoints.outer.x,
@@ -712,28 +907,87 @@
 				//helpers.each(pointsWithValues,function(point){
 					//point.draw();
 				//});
+
+
+				//this.volumeMax			=	300;
+				//this.volumeMin			=	30;
+				//this.volumeSetup		=	3;
+				//this.volumeSetupValue	=	(this.volumeEndPoint-this.volumeStartPoint )/ ( this.volumeSetup );
+				//this.volumeScaleY		=   (this.volumeMax-this.volumeMin )/ ( this.volumeEndPoint-this.volumeStartPoint );
+			
+				//alert(this.scale.calculateVolY );
+				
+				  
+				
+				if( dataset.avgVolume5 ){ 
+					var linePositionY =this.scale.calculateVolY(  dataset.avgVolume5 )+0.5;
+					ctx.fillStyle = 'rgba(250,100, 100,0.1)'	 
+					//alert( dataset.avgVolume5 + ":" + linePositionY + ":" + this.scale.volumeEndPoint );
+					ctx.beginPath();
+					ctx.moveTo(		this.scale.xScalePaddingLeft,					this.scale.volumeEndPoint	);
+					ctx.lineTo(		this.scale.xScalePaddingLeft,					linePositionY	);
+					ctx.lineTo(		this.scale.width-2,						linePositionY	);
+					ctx.lineTo(		this.scale.width-2,						this.scale.volumeEndPoint	); 
+					//ctx.stroke();
+					ctx.fill();
+					ctx.closePath(); 
+					ctx.fillStyle = "rgba(0,0,0,0.5)";
+					ctx.textAlign		= "left";
+					ctx.textBaseline	= "middle"; 
+					ctx.fillText( "5æ—¥å‡é‡", this.scale.width+2, linePositionY );
+					ctx.fillText( dataset.avgVolume5, this.scale.width+2, linePositionY+14 ); 
+				}
+
+				ctx.lineWidth = 0.3; 
+				ctx.fillStyle = 'rgba(200,0,0,0.5)';
+				ctx.strokeStyle ="red"; 
+				ctx.beginPath();
+				helpers.each(this.volPoints, function(point, index){
+					//alert( point.value );
+					var x= this.scale.calculateX( index );
+					var y = this.scale.calculateVolY(  point.value )+0.5;
+					
+
+					//alert( y );
+
+					//alert( x+":"+ y );
+					//if (index === 0){
+					//	ctx.moveTo( x,  y);
+					//}
+					//else{
+						ctx.moveTo(x-0.5, this.scale.volumeEndPoint );
+						ctx.lineTo(x-0.5, y);
+						ctx.lineTo( x+0.5, y );
+						ctx.lineTo( x+0.5, this.scale.volumeEndPoint );
+						
+					//}
+				}, this);
+				ctx.fill();
+				//ctx.stroke();
+				ctx.closePath();
+			 
 			},this);
 		},
 		
 		/***
-		 * ÏÔÊ¾ÌáÊ¾¿ò·½·¨
-		 * 1. ÏÈÅĞ¶Ï½¹µãÉÏµÄÔªËØÊÇ·ñ·¢Éú±ä»¯
-		 * 2. ÅĞ¶ÏÊÇ·ñÓĞ¶àÖÖÍ¼ĞÎÊı¾İĞèÒªÏÔÊ¾
+		 * æ˜¾ç¤ºæç¤ºæ¡†æ–¹æ³•
+		 * 1. å…ˆåˆ¤æ–­ç„¦ç‚¹ä¸Šçš„å…ƒç´ æ˜¯å¦å‘ç”Ÿå˜åŒ–
+		 * 2. åˆ¤æ–­æ˜¯å¦æœ‰å¤šç§å›¾å½¢æ•°æ®éœ€è¦æ˜¾ç¤º
 		 */
 		showTooltip : function(ChartElements, pos){
 			// Only redraw the chart if we've actually changed what we're hovering on.
 			if (typeof this.activeElements === 'undefined') this.activeElements = [];
 
-			//ÅĞ¶ÏÔªËØÊÇ·ñ±äÁË
+			//åˆ¤æ–­å…ƒç´ æ˜¯å¦å˜äº†
 			var isChanged = (function(Elements){
 				var changed = false;
 				
-				//ÔªËØµÄ³¤¶È²»Í¬
+				//å…ƒç´ çš„é•¿åº¦ä¸åŒ
 				if (Elements.length !== this.activeElements.length){
 					changed = true;
 					return changed;
 				}
-				//Ñ­»·ÅĞ¶ÏÔªËØ×ÓÔªËØ
+				//å¾ªç¯åˆ¤æ–­å…ƒç´ å­å…ƒç´ 
 				helpers.each(Elements, function(element, index){
 					if (element !== this.activeElements[index]){
 						changed = true;
@@ -742,7 +996,7 @@
 				return changed;
 			}).call(this, ChartElements);
 
-			//ÅĞ¶ÏÊÇ·ñĞèÒªÖØĞÂ»­
+			//åˆ¤æ–­æ˜¯å¦éœ€è¦é‡æ–°ç”»
 			if (!isChanged  ){
 				return;
 			}
@@ -751,7 +1005,7 @@
 			}
 
 
-			//¿ªÊ¼´¦ÀíÍ¼ÏóÖØ»­¹¤×÷ 
+			//å¼€å§‹å¤„ç†å›¾è±¡é‡ç”»å·¥ä½œ 
 			var ctx = this.mouseCtx;
 			ctx.clearRect(0,0,this.chart.width,this.chart.height);
 				
@@ -771,8 +1025,8 @@
 				ctx.clearRect(0,0,this.chart.width,this.chart.height);
 
 				new Chart.Rectangle({ctx:ctx,fillColor:'#6CB8F0',strokeColor:'#0C08F0',strokeWidth:1,x:posX,y:bottomRange+18,width:40,base:bottomRange+1}).draw();
-				new Chart.Rectangle({ctx:ctx,fillColor:'red',strokeColor:'blue',strokeWidth:1,x:leftRange-18,y:posY+8,width:36,base:posY-8}).draw();
-				new Chart.Rectangle({ctx:ctx,fillColor:'red',strokeColor:'blue',strokeWidth:1,x:rightRange+18,y:posY+8,width:36,base:posY-8}).draw();
+				new Chart.Rectangle({ctx:ctx,fillColor:'red',strokeColor:'blue',strokeWidth:1,x:leftRange-20,y:posY+8,width:40,base:posY-8}).draw();
+				new Chart.Rectangle({ctx:ctx,fillColor:'red',strokeColor:'blue',strokeWidth:1,x:rightRange+20,y:posY+8,width:40,base:posY-8}).draw();
 				
 				
 
@@ -784,37 +1038,45 @@
 				ctx.moveTo( leftRange, posY );
 				ctx.lineTo( rightRange,  posY );  
 				//this.scale.startPoint
-				//YÖá Êú
+				//Yè½´ ç«–
 				ctx.moveTo( posX, topRange );
 				ctx.lineTo( posX, bottomRange );  
 
-
-				//Á½¸öÖáµÄ±êÇ©ÎÄ±¾
-				//»­XÖáÎÄ×Ö 
-				ctx.fillStyle = "#FFF";
-				ctx.textAlign = "center";
-				ctx.textBaseline =  "middle";
-
-				//»­µ×²¿
-				ctx.fillText( this.scale.getMinute( parseInt( point.label )-1) , posX, bottomRange+10);		//µ×²¿Ê±¼ä±êÇ©
+				ctx.moveTo( posX, this.scale.volumeStartPoint );
+				ctx.lineTo( posX, this.scale.volumeEndPoint );  
 
 
-				ctx.textAlign = "right";
-
-				//»­ÓÒ±ß
-				ctx.fillText( point.value , leftRange-5, posY+1 ); 
-
-				ctx.textAlign = "left";
-
-				//ÓÒ±ßµÄ°Ù·Ö±È
-				ctx.fillText( (point.value /this.scale.centerValue*100-100).toFixed(2) + "%"  , rightRange+5, posY+1 ); 
+				//ä¸¤ä¸ªè½´çš„æ ‡ç­¾æ–‡æœ¬
+				//ç”»Xè½´æ–‡å­— 
+				ctx.fillStyle		= "#FFF";
+				ctx.textAlign		= "center";
+				ctx.textBaseline	= "middle";
 
 
-				ctx.stroke();
 
-
+				//ç”»åº•éƒ¨
+				ctx.fillText( this.scale.getMinute( parseInt( point.label )-1) , posX, bottomRange+10);		//åº•éƒ¨æ—¶é—´æ ‡ç­¾ 
+				ctx.textAlign = "right"; 
+				//ç”»å³è¾¹
+				ctx.fillText( point.value , leftRange-5, posY+1 );  
+				ctx.textAlign = "left"; 
+				//å³è¾¹çš„ç™¾åˆ†æ¯”
+				ctx.fillText( (point.value /this.scale.centerValue*100-100).toFixed(2) + "%"  , rightRange+5, posY+1 );  
+				ctx.stroke(); 
 				point.draw();
  
+ 
+				ctx.textAlign = "left";
+				ctx.fillStyle = "rgba(0,0,0,0.5)";
+				ctx.font = "12px Arial";
+
+				if( this.volPoints[point.label] ){
+					//æ˜¾ç¤ºå½“å‰çš„ä»·æ ¼
+					ctx.fillText( "ä»·æ ¼: "+point.value, leftRange, 8 );  
+					ctx.fillText( "æ¶¨è·Œå¹…: "+ (point.value /this.scale.centerValue*100-100).toFixed(2) + "%", leftRange+70, 8 );  
+					ctx.fillText( "äº¤æ˜“é‡: "+this.volPoints[point.label].value, leftRange+160, 8 );  
+				}
+
 			}else{
 				//ctx.beginPath(); 
 				//ctx.fillStyle = "#000";

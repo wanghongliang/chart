@@ -1736,6 +1736,10 @@
 			this.startPoint		+= this.padding;
 			this.endPoint		-= this.padding;
 
+			
+			//this.startPoint	 = 0;
+			//alert( this.startPoint );
+
 			// Cache the starting height, so can determine if we need to recalculate the scale yAxis
 			var cachedHeight = this.endPoint - this.startPoint,
 				cachedYLabelWidth;
