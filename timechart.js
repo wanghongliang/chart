@@ -542,7 +542,7 @@
 						x: this.scale.calculateX(index),
 						y: this.scale.endPoint
 					});
-					point.save();
+					point.save(); 
 				}, this);
 
 			},this);
