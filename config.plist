@@ -146,9 +146,9 @@
 	<key>RtVariables</key>
 	<dict>
 		<key>MLB</key>
-		<string>C02530600S5F9T5AF</string>
+		<string>C0250920060FV4114</string>
 		<key>ROM</key>
-		<string>94f6a31f877a</string>
+		<string>0cbc9f4e4cbc</string>
 	</dict>
 	<key>SMBIOS</key>
 	<dict>
@@ -159,11 +159,11 @@
 		<key>BiosVersion</key>
 		<string>MBA61.88Z.0099.B04.1305241529</string>
 		<key>Board-ID</key>
-		<string></string>
+		<string>Mac-BE0E8AC46FE800CC</string>
 		<key>BoardManufacturer</key>
 		<string>Apple Inc.</string>
 		<key>BoardSerialNumber</key>
-		<string>C02530600S5F9T5AF</string>
+		<string>C0250920060FV4114</string>
 		<key>BoardType</key>
 		<integer>10</integer>
 		<key>ChassisAssetTag</key>
@@ -179,11 +179,11 @@
 		<key>Mobile</key>
 		<true/>
 		<key>ProductName</key>
-		<string></string>
+		<string>MacBook8,1</string>
 		<key>SerialNumber</key>
-		<string>C02Q60VPF8J3</string>
+		<string>C02PG1QCFWW3</string>
 		<key>SmUUID</key>
-		<string></string>
+		<string>4BAB2EA9-7B49-975C-B4A5-BF555676EC11</string>
 		<key>Trust</key>
 		<false/>
 		<key>Version</key>
